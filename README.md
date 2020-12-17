@@ -10,6 +10,8 @@ Major League Baseball(MLB) has been organizing and playing professional baseball
 
 ![img](./images/home_vs_away.png)
 
+## Business Case
+
 
 ## The Data
 The dataset used in this project was created through the use of [retrosheet.org](https://www.retrosheet.org/) as it has one of the largest collection of MLB statistics and records from the past 100+ years of play. The collected statistics try and capture what happened in the game in terms of batting, fielding, and pitching and can give an indication as to why one team performed better than the other.
