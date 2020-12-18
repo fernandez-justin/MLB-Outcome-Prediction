@@ -16,6 +16,8 @@ Major League Baseball(MLB) has been organizing and playing professional baseball
 ## The Data
 The dataset used in this project was created through the use of [retrosheet.org](https://www.retrosheet.org/) as it has one of the largest collection of MLB statistics and records from the past 100+ years of play. The collected statistics try and capture what happened in the game in terms of batting, fielding, and pitching and can give an indication as to why one team performed better than the other.
 
+![img](./images/num_runs_won_by.png)
+
 The dataset includes features about how each team perfomed in every game leading up to the game that we are predicting the outcome of. This inlcudes features on how that team has batted with statistics like batting average, on base percentage, and commonly recorded statistics like hits, singles, doubles, and many more. Pitching statistics are also being used such as earned runs average, number of pitchers used, and strikeouts. Lastly, fielding statsistics like putouts, assists, and passed balls are used round out the last aspect of the game.
 
 ![img](./images/runs_per_year.png)
@@ -48,8 +50,11 @@ With more time I would have liked to develop the data set even further. As of no
  
 
 ### Navigation
-- `final_notebook.ipynb`: Final notebook containing complete anlysis and modeling
-- `EDA_FE_notebook.ipynb`: Exploratory data analysis and feature engineering
-- `modeling.ipynb`: Classification modeling for prediction of fire size
-- `data`: Folder containing data using in repository
+- `Main_notebook.ipynb`: Final notebook containing complete anlysis and modeling
+- `exploratory_data_analysis.ipynb`: Exploratory data analysis
+- `modeling.ipynb`: Classification modeling for predicting outcome of game
+- `feature_engineering.ipynb`: Engineering of features to gain more information
+- `creating_cumulative_stat_df.ipynb`: Creating cumulative stats dataframe
 - `images`: Folder containing images used in repository
+- `baseline_model.py`: Runs 4 baseline classification models
+- `dataframe_creation.py`: creating dataframes for prediction
