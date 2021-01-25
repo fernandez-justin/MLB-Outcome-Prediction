@@ -1,4 +1,4 @@
-# Betting-Bank
+# Major League Baseball Outcome Predction
 
 ![img](./images/stadium.jpg)
 
