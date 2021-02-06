@@ -297,7 +297,7 @@ def create_away_won_prev(df):
     return away_won_last_game_column
 
 
-def create_aggregate_data(df):
+def create_aggregate_data_bad(df):
     df['Date'] = pd.to_datetime(df["Date"])
     # all team and years
     team_list = df.home_team.unique()
@@ -410,3 +410,107 @@ def create_aggregate_data(df):
     final_final_df.columns = columns_for_output_df
     
     return final_final_df
+
+def create_aggregate_data(df):
+    #df = pd.read_csv('data/pbp_data_final.csv')
+    df['Date'] = pd.to_datetime(df["Date"])
+    # all team and years
+    team_list = df.home_team.unique()
+    year_list = df.Date.dt.year.unique()
+    drop_cols_before_modeling = ['day_of_week','away_league',
+                                'away_team_game_number','home_league',
+                                'home_team_game_number','day_or_night','park_id','attendance',
+                                'time_of_game','away_line_scores','home_line_scores','year','id']
+    df.drop(columns=drop_cols_before_modeling,inplace=True)
+    df.drop(df.loc[:,'hb_ump_id':'acquisition_info'],axis=1,inplace=True)
+    drop_for_cummean = ['number_of_outs','target','away_won_last_game','home_won_last_game']
+    df.drop(columns=drop_for_cummean,inplace=True)
+    # making dummy rows for use in putting games into year/team buckets
+    df['home_date'] = df.Date
+    df['away_date'] = df.Date
+    # making dummy rows for game in series for attaching later
+    df['home_game_in_series'] = df.game_in_series
+    df['away_game_in_series'] = df.game_in_series
+    # initialize dict so that we can aggregate the stats of each team per year
+    # final dict is where we are going to be adding the aggregated stats
+    stat_dict = {}
+    final_dict = {}
+    for year in year_list:
+        stat_dict[year] = {}
+        final_dict[year] = {}
+        for team in team_list:
+            stat_dict[year][team] = []
+            final_dict[year][team] = []
+    # this is putting games into the correct year/team combo
+    # we need both home and away games bc away games affect stats of the team
+    # this will end in lists that contain every game for every team for every year
+    # dict[year][team] = 161 lists of each games stats
+    for year in year_list:
+        for team in team_list:
+            # home game stats
+            for game in df[(df.Date.dt.year == year)&(df.home_team == team)].filter(regex='home').values.tolist():
+                stat_dict[year][team].append(np.array(game))
+            # away game stats
+            for game in df[(df.Date.dt.year == year)&(df.away_team == team)].filter(regex='away').values.tolist():
+                stat_dict[year][team].append(np.array(game))
+
+    # have to sort each year/team array so that they are in the correct date order
+    for year in year_list:
+        for team in team_list:
+            stat_dict[year][team] = sorted(stat_dict[year][team],key=itemgetter(-2))
+    # putting date in the front to make it easier to work with
+    for year in year_list:
+        for team in team_list:
+            year_team_stats = []
+            for game in stat_dict[year][team]:
+                year_team_stats.append(np.insert(game[:-2],0,game[-2:]))
+            stat_dict[year][team] = year_team_stats
+    # this is aggregating the stats per year
+    # so each game is the mean of all stats of that game and all previous
+    for year in year_list:
+        for team in team_list:
+            curr_game_number = 0
+            aggregate_stats = np.zeros(40)
+            for game in stat_dict[year][team]:
+                header_info = game[0:3]
+                contents = game[3:]
+                aggregate_stats_current_game = aggregate_stats/curr_game_number
+                appending_game = np.append(header_info,[np.append(aggregate_stats_current_game,curr_game_number+1)])
+                final_dict[year][team].append(appending_game)
+                aggregate_stats = contents+aggregate_stats
+                curr_game_number +=1
+    agg_df = pd.DataFrame()
+    # creating the aggregate stats array
+    agg_array = []
+    for year in year_list:
+        for team in team_list:
+            for game in final_dict[year][team]:
+                agg_array.append(game)
+    # making the array of all stats
+    agg_df = pd.DataFrame(agg_array)
+    away_data_column_names = list(df.filter(regex='away').columns)[1:-2] # gets rid of team name and date
+    home_data_column_names = list(df.filter(regex='home').columns)[1:-2] # gets rid of team name and date
+    # get the whole dataframes games containing
+    # date, home team, away team
+    game_basic_info_df = df.loc[:,['Date','game_in_series','away_team','home_team']]
+    # merge the home team
+    # change the statistics column names to be joined on
+    date_and_name_home = ['Date','game_in_series','home_team']
+    home_col_names = date_and_name_home +home_data_column_names+ ['game_of_season_home'] 
+    agg_df.columns = home_col_names
+
+    game_basic_info_df = game_basic_info_df.merge(agg_df,how='left',on=['Date','home_team','game_in_series'])
+
+    # merge the away team
+
+    date_and_name_away = ['Date','game_in_series','away_team']
+    away_col_names = date_and_name_away + away_data_column_names+ ['game_of_season_away'] 
+    agg_df.columns = away_col_names
+    game_basic_info_df = game_basic_info_df.merge(agg_df,how='left',on=['Date','away_team','game_in_series'])
+    #changing the outcomes that have been averaged to win_loss
+    game_basic_info_df.rename(mapper={'home_outcome':'home_win_loss',
+                              'away_outcome':'away_win_loss'},axis=1,inplace=True)
+    adding_outcomes = df[['Date','game_in_series','home_team','away_team','home_outcome','away_outcome']]
+    game_basic_info_df = game_basic_info_df.merge(adding_outcomes,how='left',on=['Date','game_in_series','home_team','away_team'])
+    game_basic_info_df.to_csv('data/aggregate_data.csv')
+    return game_basic_info_df
